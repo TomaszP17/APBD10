@@ -5,7 +5,7 @@ using WebApplication10.ResponseModels;
 
 namespace WebApplication10.Services;
 
-public class DbService(DatabaseContext context) : IDbService
+public class AccountService(DatabaseContext context) : IAccountService
 {
     public async Task<GetAccountResponseModel> GetAccountByIdAsync(int id)
     {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using WebApplication10.Contexts;
+using WebApplication10.Exceptions;
 using WebApplication10.Models;
 using WebApplication10.ResponseModels;
 
@@ -17,20 +18,26 @@ public class ProductService(DatabaseContext context) : IProductService
             ProductHeight = product.ProductHeight,
             ProductDepth = product.ProductDepth
         };
-        
-        var categories = await context.Categories
-            .Where(e => product.ProductCategories.Contains(e.CategoryId))
-            .ToListAsync();
-        
-        newProduct.ProductCategories = categories.Select(e => new ProductCategory
-        {
-            Category = e,
-            Product = newProduct
-        });
-        
         await context.Products.AddAsync(newProduct);
-        await context.ProductCategories.AddRangeAsync(newProduct.ProductCategories);
         await context.SaveChangesAsync();
+
+        foreach (var categoryId in product.ProductCategories)
+        {
+            var responseCategory = await context.Categories.FindAsync(categoryId);
+            if (responseCategory is null)
+            {
+                throw new NotFoundCategoryException($"category with that exception is not found: {categoryId}");
+            }
+
+            await context.ProductCategories.AddAsync(new ProductCategory()
+            {
+                ProductId = newProduct.ProductId,
+                CategoryId = categoryId
+            });
+        }
+
+        await context.SaveChangesAsync();
+        
         return product;
     }
 }

@@ -2,7 +2,7 @@
 
 namespace WebApplication10.Services;
 
-public interface IDbService
+public interface IAccountService
 {
     Task<GetAccountResponseModel> GetAccountByIdAsync(int id);
 }

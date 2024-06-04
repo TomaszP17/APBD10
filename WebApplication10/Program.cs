@@ -1,15 +1,18 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using WebApplication10.Contexts;
 using WebApplication10.Exceptions;
 using WebApplication10.ResponseModels;
 using WebApplication10.Services;
+using WebApplication10.Validators;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<IDbService, DbService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddValidatorsFromAssemblyContaining<AddProductValidator>();
 builder.Services.AddDbContext<DatabaseContext>(opt =>
 {
     opt.UseSqlServer(builder.Configuration.GetConnectionString("Default"));
@@ -24,7 +27,7 @@ if (app.Environment.IsDevelopment())
 }
 
 
-app.MapGet("api/accounts/{id:int}", async ( int id, IDbService dbService) =>
+app.MapGet("api/accounts/{id:int}", async ( int id, IAccountService dbService) =>
 {
     try
     {
@@ -35,8 +38,15 @@ app.MapGet("api/accounts/{id:int}", async ( int id, IDbService dbService) =>
         return Results.NotFound(e.Message);
     }
 });
-app.MapPost("api/products", async (PostProductModel product, IProductService productService) =>
+app.MapPost("api/products", async (PostProductModel product, IProductService productService, IValidator<PostProductModel> validator) =>
 {
+    var validate = await validator.ValidateAsync(product);
+    if (!validate.IsValid)
+    {
+        return Results.BadRequest(validate.Errors);
+    }
+    
+    
     return Results.Created("api/products", await productService.CreateProduct(product));
 }).Produces<PostProductModel>();
 
